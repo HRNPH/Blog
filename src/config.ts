@@ -51,17 +51,10 @@ export const navBarConfig: NavBarConfig = {
 }
 
 export const profileConfig: ProfileConfig = {
-  avatar: 'assets/images/demo-avatar.png',  // Relative to the /src directory. Relative to the /public directory if it starts with '/'
+  avatar: 'assets/images/profile/pfp-2.jpg',  // Relative to the /src directory. Relative to the /public directory if it starts with '/'
   name: 'hrnph',
   bio: "Random AI Software Engineer Who's Passionate About AI and Open Source & Anime",
   links: [
-    // {
-    //   name: 'Twitter',
-    //   icon: 'fa6-brands:twitter',       // Visit https://icones.js.org/ for icon codes
-    //                                     // You will need to install the corresponding icon set if it's not already included
-    //                                     // `pnpm add @iconify-json/<icon-set-name>`
-    //   url: 'https://twitter.com',
-    // },
     {
       name: 'Website',
       icon: 'fa6-solid:house',
