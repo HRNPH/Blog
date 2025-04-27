@@ -80,6 +80,12 @@ This design replicates cloud provider Private Subnets inside a homelab environme
 
 ---
 
+# Step 0: Prerequisites
+
+Clone my template repository
+
+::github{repo="hrnph/Proxmox-k8s-Terraform"}
+
 # Step 1: Proxmox Networking
 
 Create `vmbr0` (LAN) and `vmbr1` (Cluster):
@@ -112,13 +118,41 @@ iface vmbr1 inet static
 
 # Step 2: Terraform VM Provisioning
 
+Prepare your terraform.tfvars file with your Proxmox login and IPs.
+
+:::tip
+2 Master 3 Workers Setup (should go to 3 for Acutal HA, but whatever, this is a good start)
+:::
+
+:::important
+You need to also modified the inventory.ini file if you modified the cluster_vms
+:::
+
+```hcl
+pm_password    = "your-password"
+template_id    = "your-cloudinit-template-id"
+target_node    = "your-proxmox-node"
+ssh_public_key = "your-ssh-public-key"
+
+cluster_vms = [
+  { name = "master-1", ip = "192.168.3.11", cores = 2, memory = 4096, disk = 32 },
+  { name = "master-2", ip = "192.168.3.12", cores = 2, memory = 4096, disk = 32 },
+  { name = "worker-1", ip = "192.168.3.21", cores = 2, memory = 4096, disk = 32 },
+  { name = "worker-2", ip = "192.168.3.22", cores = 2, memory = 4096, disk = 32 },
+  { name = "worker-3", ip = "192.168.3.23", cores = 2, memory = 4096, disk = 32 },
+]
+```
+
 ```bash
 terraform init
 terraform plan -out ./plans/1-init
 terraform apply ./plans/1-init
 ```
 
-Creates:
+## What is happening
+
+Terraform creates VMs in Proxmox using the specified template and cloud-init configuration.
+By using the `cloud-init` template, it sets up the VMs with the specified IPs and resources.
 
 - 2 Masters
 - 3 Workers
@@ -132,10 +166,15 @@ Creates:
 ansible-playbook -i inventory.ini playbook.yml
 ```
 
-Tasks:
+## What is happening
+
+Ansible configures the VMs by accessing the VMs via SSH through the jumpbox.
+Each node and also te jumpy is configured in the inventory.ini file that ansible use.
+Ansible then ssh into the jumpbox and then into the master-1 node to install microk8s.
+and continues to install microk8s on the other nodes.
 
 - Install MicroK8s
-- HA cluster setup
+- HA cluster setup (Join the cluster to the cluster)
 - Rancher + ArgoCD deployment
 - Expose via Ingress
 
