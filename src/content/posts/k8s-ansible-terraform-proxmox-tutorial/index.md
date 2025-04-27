@@ -204,16 +204,23 @@ Then access:
 
 ---
 
-# Important Files Overview
+# 📂 Important File Overview
 
-| File                | Purpose                                  |
-| :------------------ | :--------------------------------------- |
-| `main.tf`           | Terraform VMs definitions                |
-| `terraform.tfvars`  | Sensitive variables (Proxmox login, IPs) |
-| `inventory.ini`     | Ansible inventory (hosts, jumpbox proxy) |
-| `playbook.yml`      | Ansible tasks (K8s, Rancher, ArgoCD)     |
-| `.terraform/`       | Terraform local cache (auto)             |
-| `terraform.tfstate` | Tracks live infra (do not edit manually) |
+This section explains the key files in this repository, what they do, and why they matter.  
+**If you're new to Terraform or Ansible**, read this carefully before editing!
+
+| File / Folder              | Purpose                                                                                                                                                        |
+| :------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `main.tf`                  | Defines the infrastructure Terraform will create: VMs for Kubernetes masters, workers, and the jumpbox.                                                        |
+| `terraform.tfvars.example` | A sample file showing what variables you need to define for Terraform (Proxmox login, cluster IPs, VM specs). Copy to `terraform.tfvars` and edit your values. |
+| `terraform.tfvars`         | Your actual Terraform variable configuration. Sensitive information like Proxmox API password, SSH public key, cluster VM details are placed here.             |
+| `inventory.ini`            | Ansible inventory file. Lists all VM IPs and configures SSH access via the jumpbox. Must match the IPs used in `terraform.tfvars`.                             |
+| `playbook.yml`             | Main Ansible playbook. Automates the setup of MicroK8s, Rancher, and ArgoCD across the cluster. Fully sequential and clean.                                    |
+| `/plans/`                  | Terraform plans (output from `terraform plan -out`). Used to pre-approve and manage infrastructure changes safely.                                             |
+| `.terraform/`              | Terraform working directory (created by `terraform init`). Contains plugins, backend data. No need to touch manually.                                          |
+| `terraform.tfstate`        | Terraform state file. Tracks everything Terraform created. **Do not edit manually.** Keep it safe to manage future changes.                                    |
+| `/roles/` (optional)       | Empty or deprecated for now. Originally for modular Ansible roles but merged into `playbook.yml` for simplicity.                                               |
+| `README.md`                | Full documentation of the project, setup steps, file explanations, and additional tips for modification.                                                       |
 
 ---
 
