@@ -13,6 +13,8 @@ draft: false
 
 In this blog, I show you how to built a **self-hosted Kubernetes cluster** on **Proxmox** using **Terraform**, **Ansible**, **MicroK8s**, **Rancher**, and **ArgoCD**.
 
+::github{repo="hrnph/Proxmox-k8s-Terraform"}
+
 ## What you will get
 
 - A fully functional Kubernetes cluster with Rancher and ArgoCD
