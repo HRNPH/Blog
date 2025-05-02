@@ -74,8 +74,12 @@ This site is where I share the stuff I’m working on, random thoughts, and prob
 ::timeline
 
 - 📄 [READ](https://aclanthology.org/2024.findings-emnlp.351/) **EMNLP 2024 - _On Creating an English-Thai Code-switched Machine Translation in Medical Domain_ – Co-author**
+
   - Research focused on bilingual machine translation for the medical domain.  
      Contributed as part of the PreceptorAI & Chulalongkorn University.
+
+- 📄 [READ](https://aclanthology.org/2024.bionlp-1.55/) **RRG 2024 - _SICAR at RRG2024: GPU Poor’s Guide to Radiology Report Generation_ – Co-author**
+  - Contributed as part of the PreceptorAI & Chulalongkorn University.
 
 ### Certifications
 
