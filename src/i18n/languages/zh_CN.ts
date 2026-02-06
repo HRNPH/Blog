@@ -42,4 +42,5 @@ export const zh_CN: Translation = {
   [Key.portfolio]: '作品集',
   [Key.notFoundTitle]: '未找到页面',
   [Key.backToHome]: '返回主页',
+  [Key.language]: '语言',
 }

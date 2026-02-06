@@ -42,4 +42,5 @@ export const tr: Translation = {
   [Key.portfolio]: 'Portföy',
   [Key.notFoundTitle]: 'Sayfa bulunamadı',
   [Key.backToHome]: 'Ana sayfaya dön',
+  [Key.language]: 'Dil',
 }

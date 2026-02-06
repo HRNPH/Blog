@@ -42,4 +42,5 @@ export const ru: Translation = {
   [Key.portfolio]: 'Портфолио',
   [Key.notFoundTitle]: 'Страница не найдена',
   [Key.backToHome]: 'Вернуться на главную',
+  [Key.language]: 'Язык',
 }

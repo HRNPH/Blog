@@ -42,4 +42,5 @@ export const th: Translation = {
   [Key.portfolio]: 'พอร์ตโฟลิโอ',
   [Key.notFoundTitle]: 'ไม่พบหน้านี้',
   [Key.backToHome]: 'กลับไปหน้าแรก',
+  [Key.language]: 'ภาษา',
 }

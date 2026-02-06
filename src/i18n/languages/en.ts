@@ -42,4 +42,5 @@ export const en: Translation = {
   [Key.portfolio]: 'Portfolio',
   [Key.notFoundTitle]: 'Page not found',
   [Key.backToHome]: 'Back to home',
+  [Key.language]: 'Language',
 }

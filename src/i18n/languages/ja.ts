@@ -42,4 +42,5 @@ export const ja: Translation = {
   [Key.portfolio]: 'ポートフォリオ',
   [Key.notFoundTitle]: 'ページが見つかりません',
   [Key.backToHome]: 'トップに戻る',
+  [Key.language]: '言語',
 }

@@ -42,4 +42,5 @@ export const ko: Translation = {
   [Key.portfolio]: '포트폴리오',
   [Key.notFoundTitle]: '페이지를 찾을 수 없습니다.',
   [Key.backToHome]: '메인으로 돌아가기',
+  [Key.language]: '언어',
 }
