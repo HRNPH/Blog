@@ -1,0 +1,21 @@
+---
+import ArchivePanel from '@components/ArchivePanel.astro'
+import { UNCATEGORIZED } from '@constants/constants'
+import I18nKey from '@i18n/i18nKey'
+import { DEFAULT_LOCALE, SUPPORTED_LOCALES, i18n } from '@i18n/translation'
+import MainGridLayout from '@layouts/MainGridLayout.astro'
+
+export async function getStaticPaths() {
+  return SUPPORTED_LOCALES.filter(lang => lang !== DEFAULT_LOCALE).map(
+    lang => ({
+      params: { lang },
+    }),
+  )
+}
+
+const { lang } = Astro.params
+---
+
+<MainGridLayout title={i18n(I18nKey.archive, lang)} lang={lang}>
+    <ArchivePanel categories={[UNCATEGORIZED]} lang={lang}></ArchivePanel>
+</MainGridLayout>

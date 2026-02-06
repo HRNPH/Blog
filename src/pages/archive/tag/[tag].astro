@@ -1,12 +1,12 @@
 ---
 import ArchivePanel from '@components/ArchivePanel.astro'
 import I18nKey from '@i18n/i18nKey'
-import { i18n } from '@i18n/translation'
+import { DEFAULT_LOCALE, i18n } from '@i18n/translation'
 import MainGridLayout from '@layouts/MainGridLayout.astro'
-import { getSortedPosts } from '@utils/content-utils'
+import { getSortedPostsForLang } from '@utils/content-utils'
 
 export async function getStaticPaths() {
-  const posts = await getSortedPosts()
+  const posts = await getSortedPostsForLang(DEFAULT_LOCALE)
 
   // タグを集めるための Set の型を指定
   const allTags = posts.reduce<Set<string>>((acc, post) => {
