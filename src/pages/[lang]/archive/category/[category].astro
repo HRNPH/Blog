@@ -1,0 +1,36 @@
+---
+import ArchivePanel from '@components/ArchivePanel.astro'
+import I18nKey from '@i18n/i18nKey'
+import {
+  DEFAULT_LOCALE,
+  i18n,
+  SUPPORTED_LOCALES,
+} from '@i18n/translation'
+import MainGridLayout from '@layouts/MainGridLayout.astro'
+import { getCategoryList } from '@utils/content-utils'
+
+export async function getStaticPaths() {
+  const paths = []
+  const nonDefaultLocales = SUPPORTED_LOCALES.filter(
+    (lang) => lang !== DEFAULT_LOCALE,
+  )
+
+  for (const lang of nonDefaultLocales) {
+    const categories = await getCategoryList(lang)
+    for (const category of categories) {
+      paths.push({
+        params: { lang, category: category.name },
+      })
+    }
+  }
+
+  return paths
+}
+
+const { lang } = Astro.params
+const category = Astro.params.category as string
+---
+
+<MainGridLayout title={i18n(I18nKey.archive, lang)} description={i18n(I18nKey.archive, lang)} lang={lang}>
+    <ArchivePanel categories={[category]} lang={lang}></ArchivePanel>
+</MainGridLayout>

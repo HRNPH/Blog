@@ -7,7 +7,6 @@ import I18nKey from '@i18n/i18nKey'
 import { i18n } from '@i18n/translation'
 import MainGridLayout from '@layouts/MainGridLayout.astro'
 import {
-  getPostAlternates,
   getPostForLang,
   getPostLang,
   getPostLogicalSlug,
@@ -17,15 +16,14 @@ import {
 import { getDir, getPostUrlBySlug } from '@utils/url-utils'
 import { Icon } from 'astro-icon/components'
 import { licenseConfig } from 'src/config'
-import PostMetadata from '../../components/PostMeta.astro'
-import ImageWrapper from '../../components/misc/ImageWrapper.astro'
-import { profileConfig, siteConfig } from '../../config'
-import { DEFAULT_LOCALE } from '../../i18n/translation'
-import { formatDateToYYYYMMDD } from '../../utils/date-utils'
+import ImageWrapper from '@components/misc/ImageWrapper.astro'
+import PostMetadata from '@components/PostMeta.astro'
+import { profileConfig, siteConfig } from '@/config'
+import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '@i18n/translation'
+import { formatDateToYYYYMMDD } from '@utils/date-utils'
 
 export async function getStaticPaths() {
   const allPosts = await getRawSortedPosts()
-  const prevNextMap = await getPrevNextMapForLang(DEFAULT_LOCALE)
 
   // Get all unique logical slugs
   const logicalSlugs = new Set<string>()
@@ -34,29 +32,45 @@ export async function getStaticPaths() {
   })
 
   const paths = []
-  for (const slug of Array.from(logicalSlugs)) {
-    let entry = await getPostForLang(slug, DEFAULT_LOCALE)
-    if (!entry) {
-      const anyEntry = allPosts.find((p) => getPostLogicalSlug(p) === slug)
-      if (anyEntry) entry = anyEntry
-    }
+  const nonDefaultLocales = SUPPORTED_LOCALES.filter(
+    (lang) => lang !== DEFAULT_LOCALE,
+  )
+  const prevNextMapByLang: Record<string, Awaited<
+    ReturnType<typeof getPrevNextMapForLang>
+  >> = {}
+  for (const lang of nonDefaultLocales) {
+    prevNextMapByLang[lang] = await getPrevNextMapForLang(lang)
+  }
 
-    if (entry) {
-      paths.push({
-        params: { slug },
-        props: { entry, prevNext: prevNextMap[slug] },
-      })
+  for (const slug of Array.from(logicalSlugs)) {
+    for (const lang of nonDefaultLocales) {
+      let entry = await getPostForLang(slug, lang)
+      if (!entry) {
+        entry = await getPostForLang(slug, DEFAULT_LOCALE)
+      }
+      if (!entry) {
+        const anyEntry = allPosts.find((p) => getPostLogicalSlug(p) === slug)
+        if (anyEntry) entry = anyEntry
+      }
+
+      if (entry) {
+        paths.push({
+          params: {
+            lang: lang,
+            slug: slug,
+          },
+          props: { entry, lang, prevNext: prevNextMapByLang[lang]?.[slug] },
+        })
+      }
     }
   }
   return paths
 }
 
-const { entry, prevNext } = Astro.props
+const { entry, lang, prevNext } = Astro.props
 const { Content, headings } = await entry.render()
 
 const { remarkPluginFrontmatter } = await entry.render()
-
-const alternateLinks = await getPostAlternates(getPostLogicalSlug(entry))
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -71,12 +85,11 @@ const jsonLd = {
   },
   datePublished: formatDateToYYYYMMDD(entry.data.published),
   inLanguage: (entry.data.lang ? entry.data.lang.replace('_', '-') : siteConfig.lang.replace('_', '-')),
-  // TODO include cover image here
 }
 
 const postLang = getPostLang(entry)
 ---
-<MainGridLayout banner={entry.data.image} title={entry.data.title} description={entry.data.description} lang={entry.data.lang} setOGTypeArticle={true} headings={headings}>
+<MainGridLayout banner={entry.data.image} title={entry.data.title} description={entry.data.description} lang={lang} setOGTypeArticle={true} headings={headings}>
     <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(jsonLd)}></script>
     <div class="flex w-full rounded-[var(--radius-large)] overflow-hidden relative mb-4">
         <div id="post-container" class:list={["card-base z-10 px-6 md:px-9 pt-6 pb-4 relative w-full ",
@@ -88,13 +101,13 @@ const postLang = getPostLang(entry)
                     <div class="transition h-6 w-6 rounded-md bg-black/5 dark:bg-white/10 text-black/50 dark:text-white/50 flex items-center justify-center mr-2">
                         <Icon name="material-symbols:notes-rounded"></Icon>
                     </div>
-                    <div class="text-sm">{remarkPluginFrontmatter.words} {" " + i18n(I18nKey.wordsCount)}</div>
+                    <div class="text-sm">{remarkPluginFrontmatter.words} {" " + i18n(I18nKey.wordsCount, lang)}</div>
                 </div>
                 <div class="flex flex-row items-center">
                     <div class="transition h-6 w-6 rounded-md bg-black/5 dark:bg-white/10 text-black/50 dark:text-white/50 flex items-center justify-center mr-2">
                         <Icon name="material-symbols:schedule-outline-rounded"></Icon>
                     </div>
-                    <div class="text-sm">{remarkPluginFrontmatter.minutes} {" " + i18n(I18nKey.minutesCount)}</div>
+                    <div class="text-sm">{remarkPluginFrontmatter.minutes} {" " + i18n(I18nKey.minutesCount, lang)}</div>
                 </div>
             </div>
 
@@ -141,7 +154,7 @@ const postLang = getPostLang(entry)
     </div>
 
     <div class="flex flex-col md:flex-row justify-between mb-4 gap-4 overflow-hidden w-full">
-        <a href={prevNext?.nextSlug ? getPostUrlBySlug(prevNext.nextSlug) : "#"}
+        <a href={prevNext?.nextSlug ? getPostUrlBySlug(prevNext.nextSlug, lang) : "#"}
            class:list={["w-full font-bold overflow-hidden active:scale-95", {"pointer-events-none": !prevNext?.nextSlug}]}>
             {prevNext?.nextSlug && <div class="btn-card rounded-2xl w-full h-[3.75rem] max-w-full px-4 flex items-center !justify-start gap-4" >
                 <Icon name="material-symbols:chevron-left-rounded" class="text-[2rem] text-[var(--primary)]" />
@@ -151,7 +164,7 @@ const postLang = getPostLang(entry)
             </div>}
         </a>
 
-        <a href={prevNext?.prevSlug ? getPostUrlBySlug(prevNext.prevSlug) : "#"}
+        <a href={prevNext?.prevSlug ? getPostUrlBySlug(prevNext.prevSlug, lang) : "#"}
            class:list={["w-full font-bold overflow-hidden active:scale-95", {"pointer-events-none": !prevNext?.prevSlug}]}>
             {prevNext?.prevSlug && <div class="btn-card rounded-2xl w-full h-[3.75rem] max-w-full px-4 flex items-center !justify-end gap-4">
                 <div class="overflow-hidden transition overflow-ellipsis whitespace-nowrap max-w-[calc(100%_-_3rem)] text-black/75 dark:text-white/75">
