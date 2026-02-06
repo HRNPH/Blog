@@ -237,16 +237,16 @@ export type Category = {
 export async function getCategoryList(lang?: string): Promise<Category[]> {
   const posts = await getSortedPostsForLang(lang || DEFAULT_LOCALE)
   const count: { [key: string]: number } = {}
-  posts.map((post: { data: { category: string | number } }) => {
+  for (const post of posts) {
     if (!post.data.category) {
       const ucKey = i18n(I18nKey.uncategorized, lang)
       count[ucKey] = count[ucKey] ? count[ucKey] + 1 : 1
-      return
+      continue
     }
     count[post.data.category] = count[post.data.category]
       ? count[post.data.category] + 1
       : 1
-  })
+  }
 
   const lst = Object.keys(count).sort((a, b) => {
     return a.toLowerCase().localeCompare(b.toLowerCase())

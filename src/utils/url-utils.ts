@@ -23,7 +23,7 @@ export function getPostUrlBySlug(slug: string, lang?: string): string {
 
   const parts = slug.split('/')
   const matchedLocale = (SUPPORTED_LOCALES as readonly string[]).find(
-    (l: string) => l.toLowerCase() === parts[0].toLowerCase(),
+    l => l.toLowerCase() === parts[0].toLowerCase(),
   )
 
   if (parts.length > 1 && matchedLocale) {

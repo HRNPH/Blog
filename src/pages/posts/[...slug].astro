@@ -7,7 +7,6 @@ import I18nKey from '@i18n/i18nKey'
 import { i18n } from '@i18n/translation'
 import MainGridLayout from '@layouts/MainGridLayout.astro'
 import {
-  getPostAlternates,
   getPostForLang,
   getPostLang,
   getPostLogicalSlug,
@@ -55,8 +54,6 @@ const { entry, prevNext } = Astro.props
 const { Content, headings } = await entry.render()
 
 const { remarkPluginFrontmatter } = await entry.render()
-
-const alternateLinks = await getPostAlternates(getPostLogicalSlug(entry))
 
 const jsonLd = {
   '@context': 'https://schema.org',
