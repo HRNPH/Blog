@@ -1,15 +1,15 @@
 ---
 import { Icon } from 'astro-icon/components'
-import DisplaySettings from './widget/DisplaySettings.svelte'
-import { LinkPreset, type NavBarLink } from '../types/config'
 import { navBarConfig, siteConfig } from '../config'
-import NavMenuPanel from './widget/NavMenuPanel.astro'
-import Search from './Search.svelte'
 import { LinkPresets } from '../constants/link-presets'
-import LightDarkSwitch from './LightDarkSwitch.svelte'
-import LanguageSwitcher from './LanguageSwitcher.svelte'
-import { url } from '../utils/url-utils'
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '../i18n/translation'
+import type { LinkPreset, NavBarLink } from '../types/config'
+import { url } from '../utils/url-utils'
+import LanguageSwitcher from './LanguageSwitcher.svelte'
+import LightDarkSwitch from './LightDarkSwitch.svelte'
+import Search from './Search.svelte'
+import DisplaySettings from './widget/DisplaySettings.svelte'
+import NavMenuPanel from './widget/NavMenuPanel.astro'
 const className = Astro.props.class
 
 // Detect current language from URL
@@ -21,7 +21,7 @@ const matchedLocale = (SUPPORTED_LOCALES as readonly string[]).find(
 )
 const currentLang = matchedLocale || DEFAULT_LOCALE
 
-let links: NavBarLink[] = navBarConfig.links.map(
+const links: NavBarLink[] = navBarConfig.links.map(
   (item: NavBarLink | LinkPreset): NavBarLink => {
     if (typeof item === 'number') {
       return LinkPresets[item]

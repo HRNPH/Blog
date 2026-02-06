@@ -1,14 +1,14 @@
 <script lang="ts">
+import I18nKey from '@i18n/i18nKey'
 import {
   DEFAULT_LOCALE,
   SUPPORTED_LOCALES,
-  i18n,
   getTranslation,
+  i18n,
 } from '@i18n/translation'
-import I18nKey from '@i18n/i18nKey'
 import Icon from '@iconify/svelte'
 
-export let currentLang: string = DEFAULT_LOCALE
+export const currentLang: string = DEFAULT_LOCALE
 
 function getLangName(locale: string): string {
   return getTranslation(locale)[I18nKey.langName] || locale

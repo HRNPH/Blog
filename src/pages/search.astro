@@ -1,0 +1,13 @@
+---
+import SearchPage from '../components/SearchPage.svelte'
+import I18nKey from '../i18n/i18nKey'
+import { i18n } from '../i18n/translation'
+import MainGridLayout from '../layouts/MainGridLayout.astro'
+---
+<MainGridLayout title={i18n(I18nKey.search)}>
+    <div class="flex w-full rounded-[var(--radius-large)] overflow-hidden relative min-h-32">
+        <div class="card-base z-10 px-6 md:px-9 py-6 relative w-full">
+            <SearchPage client:only="svelte" />
+        </div>
+    </div>
+</MainGridLayout>
