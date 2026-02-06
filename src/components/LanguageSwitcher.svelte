@@ -8,7 +8,7 @@ import {
 } from '@i18n/translation'
 import Icon from '@iconify/svelte'
 
-export const currentLang: string = DEFAULT_LOCALE
+export let currentLang: string = DEFAULT_LOCALE
 
 function getLangName(locale: string): string {
   return getTranslation(locale)[I18nKey.langName] || locale
