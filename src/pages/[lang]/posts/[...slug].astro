@@ -1,10 +1,14 @@
 ---
 import path from 'node:path'
 import type { CollectionEntry } from 'astro:content'
+import { profileConfig, siteConfig } from '@/config'
+import PostMetadata from '@components/PostMeta.astro'
+import ImageWrapper from '@components/misc/ImageWrapper.astro'
 import License from '@components/misc/License.astro'
 import Markdown from '@components/misc/Markdown.astro'
 import I18nKey from '@i18n/i18nKey'
 import { i18n } from '@i18n/translation'
+import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '@i18n/translation'
 import MainGridLayout from '@layouts/MainGridLayout.astro'
 import {
   getPostForLang,
@@ -13,31 +17,28 @@ import {
   getPrevNextMapForLang,
   getRawSortedPosts,
 } from '@utils/content-utils'
+import { formatDateToYYYYMMDD } from '@utils/date-utils'
 import { getDir, getPostUrlBySlug } from '@utils/url-utils'
 import { Icon } from 'astro-icon/components'
 import { licenseConfig } from 'src/config'
-import ImageWrapper from '@components/misc/ImageWrapper.astro'
-import PostMetadata from '@components/PostMeta.astro'
-import { profileConfig, siteConfig } from '@/config'
-import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '@i18n/translation'
-import { formatDateToYYYYMMDD } from '@utils/date-utils'
 
 export async function getStaticPaths() {
   const allPosts = await getRawSortedPosts()
 
   // Get all unique logical slugs
   const logicalSlugs = new Set<string>()
-  allPosts.forEach((post: CollectionEntry<'posts'>) => {
+  for (const post of allPosts) {
     logicalSlugs.add(getPostLogicalSlug(post))
-  })
+  }
 
   const paths = []
   const nonDefaultLocales = SUPPORTED_LOCALES.filter(
-    (lang) => lang !== DEFAULT_LOCALE,
+    lang => lang !== DEFAULT_LOCALE,
   )
-  const prevNextMapByLang: Record<string, Awaited<
-    ReturnType<typeof getPrevNextMapForLang>
-  >> = {}
+  const prevNextMapByLang: Record<
+    string,
+    Awaited<ReturnType<typeof getPrevNextMapForLang>>
+  > = {}
   for (const lang of nonDefaultLocales) {
     prevNextMapByLang[lang] = await getPrevNextMapForLang(lang)
   }
@@ -49,7 +50,7 @@ export async function getStaticPaths() {
         entry = await getPostForLang(slug, DEFAULT_LOCALE)
       }
       if (!entry) {
-        const anyEntry = allPosts.find((p) => getPostLogicalSlug(p) === slug)
+        const anyEntry = allPosts.find(p => getPostLogicalSlug(p) === slug)
         if (anyEntry) entry = anyEntry
       }
 
@@ -84,7 +85,9 @@ const jsonLd = {
     url: Astro.site,
   },
   datePublished: formatDateToYYYYMMDD(entry.data.published),
-  inLanguage: (entry.data.lang ? entry.data.lang.replace('_', '-') : siteConfig.lang.replace('_', '-')),
+  inLanguage: entry.data.lang
+    ? entry.data.lang.replace('_', '-')
+    : siteConfig.lang.replace('_', '-'),
 }
 
 const postLang = getPostLang(entry)

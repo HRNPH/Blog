@@ -29,15 +29,15 @@ export async function getStaticPaths() {
 
   // Get all unique logical slugs
   const logicalSlugs = new Set<string>()
-  allPosts.forEach((post: CollectionEntry<'posts'>) => {
+  for (const post of allPosts) {
     logicalSlugs.add(getPostLogicalSlug(post))
-  })
+  }
 
   const paths = []
   for (const slug of Array.from(logicalSlugs)) {
     let entry = await getPostForLang(slug, DEFAULT_LOCALE)
     if (!entry) {
-      const anyEntry = allPosts.find((p) => getPostLogicalSlug(p) === slug)
+      const anyEntry = allPosts.find(p => getPostLogicalSlug(p) === slug)
       if (anyEntry) entry = anyEntry
     }
 
@@ -70,7 +70,9 @@ const jsonLd = {
     url: Astro.site,
   },
   datePublished: formatDateToYYYYMMDD(entry.data.published),
-  inLanguage: (entry.data.lang ? entry.data.lang.replace('_', '-') : siteConfig.lang.replace('_', '-')),
+  inLanguage: entry.data.lang
+    ? entry.data.lang.replace('_', '-')
+    : siteConfig.lang.replace('_', '-'),
   // TODO include cover image here
 }
 

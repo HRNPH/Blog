@@ -1,15 +1,18 @@
 ---
-import Pagination from '@components/control/Pagination.astro'
 import PostPage from '@components/PostPage.astro'
+import Pagination from '@components/control/Pagination.astro'
 import { PAGE_SIZE } from '@constants/constants'
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '@i18n/translation'
 import MainGridLayout from '@layouts/MainGridLayout.astro'
 import { getSortedPostsForLang } from '@utils/content-utils'
+import type { GetStaticPaths } from 'astro'
 
-export async function getStaticPaths({ paginate }: { paginate: any }) {
+export async function getStaticPaths({
+  paginate,
+}: Parameters<GetStaticPaths>[0]) {
   const paths = []
   const nonDefaultLocales = SUPPORTED_LOCALES.filter(
-    (lang) => lang !== DEFAULT_LOCALE,
+    lang => lang !== DEFAULT_LOCALE,
   )
 
   for (const lang of nonDefaultLocales) {

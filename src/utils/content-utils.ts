@@ -1,7 +1,7 @@
 import { type CollectionEntry, getCollection } from 'astro:content'
 import type { BlogPostData } from '@/types/config'
 import I18nKey from '@i18n/i18nKey'
-import { DEFAULT_LOCALE, i18n, SUPPORTED_LOCALES } from '@i18n/translation'
+import { DEFAULT_LOCALE, SUPPORTED_LOCALES, i18n } from '@i18n/translation'
 import { getCategoryUrl, getPostUrlBySlug } from '@utils/url-utils'
 
 /**
@@ -20,7 +20,7 @@ export function getEntryLang(entry: {
   const parts = path.split('/')
   if (parts.length > 1) {
     const matchedLocale = (SUPPORTED_LOCALES as readonly string[]).find(
-      (l) => l.toLowerCase() === parts[0].toLowerCase(),
+      l => l.toLowerCase() === parts[0].toLowerCase(),
     )
     if (matchedLocale) return matchedLocale
   }
@@ -40,7 +40,7 @@ export function getEntryLogicalSlug(entry: {
   const parts = path.split('/')
   if (parts.length > 1) {
     const matchedLocale = (SUPPORTED_LOCALES as readonly string[]).find(
-      (l) => l.toLowerCase() === parts[0].toLowerCase(),
+      l => l.toLowerCase() === parts[0].toLowerCase(),
     )
     if (matchedLocale) return parts.slice(1).join('/')
   }
@@ -59,21 +59,21 @@ async function resolveLocalizedEntry<
 >(allItems: T[], logicalSlug: string, lang: string): Promise<T | undefined> {
   // 1. Exact match
   const exactMatch = allItems.find(
-    (item) =>
+    item =>
       getEntryLang(item) === lang && getEntryLogicalSlug(item) === logicalSlug,
   )
   if (exactMatch) return exactMatch
 
   // 2. Fallback to default locale
   const defaultMatch = allItems.find(
-    (item) =>
+    item =>
       getEntryLang(item) === DEFAULT_LOCALE &&
       getEntryLogicalSlug(item) === logicalSlug,
   )
   if (defaultMatch) return defaultMatch
 
   // 3. Fallback to any available language
-  return allItems.find((item) => getEntryLogicalSlug(item) === logicalSlug)
+  return allItems.find(item => getEntryLogicalSlug(item) === logicalSlug)
 }
 
 /* --- Posts Specific --- */
@@ -97,7 +97,7 @@ export async function getPostForLang(
 export async function getSortedPostsForLang(lang: string) {
   const allPosts = await getRawSortedPosts()
   const logicalSlugs = Array.from(
-    new Set(allPosts.map((p) => getPostLogicalSlug(p))),
+    new Set(allPosts.map(p => getPostLogicalSlug(p))),
   )
 
   const resolvedPosts: CollectionEntry<'posts'>[] = []
@@ -146,7 +146,7 @@ export async function getSortedPostsListForLang(
   lang: string,
 ): Promise<PostForList[]> {
   const sortedFullPosts = await getSortedPostsForLang(lang)
-  return sortedFullPosts.map((post) => ({
+  return sortedFullPosts.map(post => ({
     slug: getPostLogicalSlug(post),
     data: post.data,
     lang: getPostLang(post),
@@ -167,11 +167,11 @@ export async function getRawSortedPosts() {
 
 // Legacy function kept for compatibility
 export async function getSortedPosts(): Promise<
-  { body: string, data: BlogPostData; slug: string }[]
+  { body: string; data: BlogPostData; slug: string }[]
 > {
   const allBlogPosts = (await getCollection('posts', ({ data }) => {
     return import.meta.env.PROD ? data.draft !== true : true
-  })) as unknown as { body: string, data: BlogPostData; slug: string }[]
+  })) as unknown as { body: string; data: BlogPostData; slug: string }[]
 
   const sorted = allBlogPosts.sort(
     (a: { data: BlogPostData }, b: { data: BlogPostData }) => {
@@ -201,7 +201,7 @@ export type PostForList = {
 
 export async function getSortedPostsList(): Promise<PostForList[]> {
   const sortedFullPosts = await getRawSortedPosts()
-  return sortedFullPosts.map((post) => ({
+  return sortedFullPosts.map(post => ({
     slug: getPostLogicalSlug(post),
     data: post.data,
     lang: getPostLang(post),
@@ -218,15 +218,15 @@ export type Tag = {
 export async function getTagList(lang?: string): Promise<Tag[]> {
   const posts = await getSortedPostsForLang(lang || DEFAULT_LOCALE)
   const countMap: { [key: string]: number } = {}
-  posts.forEach((post) => {
-    post.data.tags.forEach((tag: string) => {
+  for (const post of posts) {
+    for (const tag of post.data.tags) {
       countMap[tag] = (countMap[tag] || 0) + 1
-    })
-  })
+    }
+  }
   const keys = Object.keys(countMap).sort((a, b) =>
     a.toLowerCase().localeCompare(b.toLowerCase()),
   )
-  return keys.map((key) => ({ name: key, count: countMap[key] }))
+  return keys.map(key => ({ name: key, count: countMap[key] }))
 }
 
 export type Category = {
@@ -266,11 +266,11 @@ export async function getPostAlternates(
 ): Promise<{ lang: string; href: string }[]> {
   const allPosts = await getRawSortedPosts()
   const aliases = allPosts.filter(
-    (post) => getPostLogicalSlug(post) === logicalSlug,
+    post => getPostLogicalSlug(post) === logicalSlug,
   )
   const site = import.meta.env.SITE.replace(/\/$/, '')
 
-  const alternates = aliases.map((post) => {
+  const alternates = aliases.map(post => {
     const lang = getPostLang(post)
     return {
       lang: lang,

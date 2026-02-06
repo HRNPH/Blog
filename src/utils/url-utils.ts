@@ -1,9 +1,9 @@
 import I18nKey from '@i18n/i18nKey'
 import {
   DEFAULT_LOCALE,
+  SUPPORTED_LOCALES,
   getKeyToLanguage,
   i18n,
-  SUPPORTED_LOCALES,
 } from '@i18n/translation'
 
 export function pathsEqual(path1: string, path2: string) {
@@ -66,7 +66,7 @@ export function getStaticAlternates(
   }
 
   const alternates: { lang: string; href: string }[] = SUPPORTED_LOCALES.map(
-    (lang) => ({
+    lang => ({
       lang: getKeyToLanguage(lang),
       href: joinAbsoluteUrl(url(path, lang)),
     }),
