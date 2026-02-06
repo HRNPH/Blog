@@ -34,5 +34,12 @@ export const zh_CN: Translation = {
 
   [Key.author]: '作者',
   [Key.publishedAt]: '发布于',
+  [Key.updatedSuffix]: '(更新)',
   [Key.license]: '许可协议',
+  [Key.unsupportedLang]: '该页面尚未翻译成%s。',
+  [Key.langName]: '简体中文',
+  [Key.profile]: '简介',
+  [Key.portfolio]: '作品集',
+  [Key.notFoundTitle]: '未找到页面',
+  [Key.backToHome]: '返回主页',
 }

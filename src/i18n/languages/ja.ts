@@ -34,5 +34,12 @@ export const ja: Translation = {
 
   [Key.author]: '作者',
   [Key.publishedAt]: '公開日',
+  [Key.updatedSuffix]: '(更新)',
   [Key.license]: 'ライセンス',
+  [Key.unsupportedLang]: 'このページはまだ%sに翻訳されていません。',
+  [Key.langName]: '日本語',
+  [Key.profile]: 'プロフィール',
+  [Key.portfolio]: 'ポートフォリオ',
+  [Key.notFoundTitle]: 'ページが見つかりません',
+  [Key.backToHome]: 'トップに戻る',
 }
