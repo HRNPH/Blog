@@ -42,4 +42,5 @@ export const id: Translation = {
   [Key.portfolio]: 'Portofolio',
   [Key.notFoundTitle]: 'Halaman tidak ditemukan',
   [Key.backToHome]: 'Kembali ke beranda',
+  [Key.language]: 'Bahasa',
 }

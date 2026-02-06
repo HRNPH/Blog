@@ -42,4 +42,5 @@ export const vi: Translation = {
   [Key.portfolio]: 'Portfolio',
   [Key.notFoundTitle]: 'Không tìm thấy trang',
   [Key.backToHome]: 'Quay về trang chủ',
+  [Key.language]: 'Ngôn ngữ',
 }

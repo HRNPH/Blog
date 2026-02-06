@@ -42,4 +42,5 @@ export const zh_TW: Translation = {
   [Key.portfolio]: '作品集',
   [Key.notFoundTitle]: '找不到頁面',
   [Key.backToHome]: '返回首頁',
+  [Key.language]: '語言',
 }

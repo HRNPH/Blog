@@ -39,6 +39,7 @@ enum I18nKey {
   portfolio = 'portfolio',
   notFoundTitle = 'notFoundTitle',
   backToHome = 'backToHome',
+  language = 'language',
 }
 
 export default I18nKey

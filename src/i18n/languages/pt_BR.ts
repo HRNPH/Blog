@@ -42,4 +42,5 @@ export const ptBR: Translation = {
   [Key.portfolio]: 'Portfólio',
   [Key.notFoundTitle]: 'Página não encontrada',
   [Key.backToHome]: 'Voltar para a página inicial',
+  [Key.language]: 'Idioma',
 }
