@@ -31,6 +31,8 @@ People throw the word around like it's one thing. It's a spectrum, and where you
 
 **Silo.** Every tenant gets the whole stack: their own database, their own cache, their own object storage, their own containers. Most expensive per tenant. Also the only model where "this hospital's data" has a physical answer you can point at.
 
+![The tenancy spectrum: pooled, bridge, and silo shapes](./0-spectrum.svg)
+
 I ended up at silo. Getting there wasn't a preference, it was arithmetic on a few questions.
 
 # How to pick a model for your SaaS
@@ -70,26 +72,7 @@ There was also a quieter reason: operational sanity. Per-tenant backup and resto
 
 The shape in one paragraph: **one codebase, one container image, stamped out once per tenant, plus a central control plane** ("the tower") that provisions and monitors all of them.
 
-```
-                    ┌──────────────────────────┐
-                    │       Control Tower      │
-                    │  provisioning · catalog  │
-                    │  monitoring · commands   │
-                    └────────▲─────────▲───────┘
-              signed call-home│         │signed call-home
-             (heartbeat 60s + │         │
-              hourly stats)   │         │
-                    ┌─────────┴──┐  ┌───┴────────┐
-                    │  Tenant A  │  │  Tenant B  │
-                    │ postgres   │  │ postgres   │
-                    │ redis      │  │ redis      │
-                    │ storage    │  │ storage    │
-                    │ api/web/   │  │ api/web/   │
-                    │ miniapp    │  │ miniapp    │
-                    │ own docker │  │ own docker │
-                    │   network  │  │   network  │
-                    └────────────┘  └────────────┘
-```
+![The silo architecture: one control tower, N identical tenant stacks calling home](./1-architecture.svg)
 
 Each tenant stack is a compose deployment with its own Postgres, Redis, object storage, the API, the doctor dashboard, and the patient mini app, all inside a Docker network named after the tenant. Nothing inside that network needs to talk to another tenant, ever. The tenant gets its own domain pair (API and app), its own TLS, its own everything.
 
@@ -102,6 +85,8 @@ This is the single most important rule in the whole design, so it gets its own h
 - Each tenant sends a **heartbeat** every 60 seconds (with exponential backoff if the tower is unreachable). The heartbeat carries health status and metrics.
 - The tower's response to a heartbeat is where **commands ride back**: "push the latest exercise catalog", "rotate your key", "force a heartbeat now". Commands piggyback on a connection the tenant already opened.
 - Tenants push **aggregate stats** hourly: counts only, no personal data ever leaves the tenant.
+
+![How tenants call home: heartbeat loop, commands riding back on the response, hourly stats](./2-call-home.svg)
 
 Why this matters: a tenant deployed inside a hospital network is behind NAT, behind firewalls, in rooms you will never see. If your control plane needs to reach in, on-prem is dead on arrival. If tenants call out, the same artifact works in your cloud, in the customer's datacenter, and in a hospital basement with one outbound rule. HTTP(S) outbound only. That's the whole network requirement.
 
