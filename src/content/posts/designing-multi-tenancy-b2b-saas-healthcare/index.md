@@ -94,6 +94,22 @@ Why this matters: a tenant deployed inside a hospital network is behind NAT, beh
 If you take one architectural idea from this post, take this one. Pull-based control beats push-based control the moment customers host things themselves. Your monitoring, your config distribution, and your remote commands should all ride connections the tenant opens.
 :::
 
+## The command mailbox
+
+The obvious question about a control plane that can't reach its tenants: how do you control them? You use the channel that's already open, sixty times an hour.
+
+A command is a row in a per-tenant queue, nothing more. When a heartbeat arrives, the tower attaches any due commands to the response. The tenant executes them, and the next heartbeat carries the result back as an ack. That's the whole protocol. "Push the latest exercise catalog", "rotate your signing key", "force a heartbeat now": all of it is mail in a mailbox, picked up on a schedule the tenant controls.
+
+Three details keep it honest:
+
+- **Every command has a TTL.** If it isn't acked within a few beats it expires and surfaces as failed. A command aimed at a tenant that went down shouldn't sit in the queue forever, and the operator should see that it never landed.
+- **Handlers are idempotent.** Delivery is at-least-once on a good day: the tenant can execute a command and then lose the connection before the ack goes out, so the same command can arrive twice. Commands are therefore written against desired state ("you should be on catalog version 12"), never against counts of actions ("apply 12 updates").
+- **Acks carry structured results.** What version was applied, what failed, how long it took. The tower's UI shows command history per tenant with timestamps, without anyone grepping logs on a box they can't reach.
+
+![Command lifecycle: queued, dispatched on a heartbeat response, acked on the next one, expired if the tenant stays silent](./4-command-mailbox.svg)
+
+That history is a side effect of the design, and in healthcare it's half the value. Auditors like knowing who told which tenant to do what, when, and whether it worked.
+
 ## Trust, but signed
 
 Since tenants are the ones talking to the tower, the tower needs to know a tenant is who it claims. Every tenant request is **Ed25519-signed**: headers carry the tenant code, a signature over a canonical request string, a timestamp, and a single-use nonce. The tower rejects stale timestamps and replays. Revoking a tenant's key is how you suspend a tenant. There is no shared static API key sitting in every environment, which was the first thing I wanted gone.
@@ -114,6 +130,39 @@ Every tenant stack boots the same way: a small migration sidecar runs the databa
 I learned this the hard way: hand-deploying tenant number three sucks, and tenant number ten is a resignation letter. Our control plane drives the hosting API end to end: create the project, create the database, create the cache, create the isolated network, push the compose definition with the right image tag and env, wire up domains. It's a resumable, step-by-step job with a timeline you can watch in the UI, because when it fails (it will, somewhere, someday) you need to see exactly which step and why.
 
 If you can't get to "new tenant in minutes, by clicking", silo's costs stop being worth it. That automation isn't optional polish, it's load-bearing.
+
+## One provisioner, several deployment routes
+
+The tower doesn't hardcode a single way to make a tenant exist. Every provisioning job runs against a small provisioner interface (create the stack, report status, tear it down), and the deployment type is just data on the tenant record. Two routes exist today, and they look nothing alike under the hood.
+
+**Managed.** The tower drives a cluster API end to end: create the project, the database, the cache, the isolated network, push the compose definition with the right image tag, wire up the domains. Then the step that matters more than it looks: before anything boots, the tower injects the callback configuration (tower URL, tenant code, signing key material) as runtime environment. The stack's first act on startup is to call home. Nobody SSHes anywhere, nobody edits files on a box, and the tenant-to-tower connection is wired by the same automation that wired the tenant.
+
+**Manual.** For on-prem, customer metal, or a hosting setup with no API worth the name. The tower still owns the bookkeeping: it issues the tenant code and credentials and holds the record, but the stack is deployed by hands (ours or the customer's) in a network the tower will never see. The stack boots with a bootstrap config, and the first heartbeat doubles as registration: the tenant tells the tower it's alive, which URLs actually work, what versions it's running. The tower learns the topology from the tenant, in the only direction that was ever going to work.
+
+![Two deployment routes converging on the same first heartbeat](./3-provisioner-routes.svg)
+
+After that first heartbeat the routes converge completely: same monitoring, same command queue, same stats pipeline. The rest of the tower doesn't know or care which route a tenant arrived by, and that's the actual point of the abstraction. Adding a third route (another cluster API, a marketplace install, whatever next year's procurement demands) means implementing an interface, not redesigning the plane.
+
+## What's bad about this control plane
+
+The honest list, because this design has real costs beyond the fleet overhead:
+
+- **Everything is at least one heartbeat late.** A command lands within a minute on a good day, and its confirmation arrives a beat later. For "push the catalog" that's irrelevant. For "something is wrong, act now" it's an eternity, and there is no faster path, by construction.
+- **Silence is ambiguous.** If a tenant stops heartbeating, it might be down, partitioned, or just backed off after a network blip. You can't probe it to find out, because you can't probe it at all. First-line diagnosis is comparing timestamps and hoping; real diagnosis means a human at the hospital.
+- **You are hand-rolling a message queue.** TTLs, retries, idempotency, acks: that's broker vocabulary, and the bug classes that come with it. The protocol only stays small because commands stay rare and boring. The day someone wants chatty remote control, this design fights them.
+- **No interactive debugging.** No SSH, no log tailing, no port-forward into a tenant. You see exactly what the tenant chooses to send. Debugging an on-prem stack means asking the customer to paste command output into an email.
+- **The manual route is a second code path with worse visibility.** A tenant somebody deployed by hand can sit on an old image for months (their right, our blindness), and every difference between how the two routes configure a stack is a difference that can bite during an incident.
+- **Key rotation is a careful dance.** The signing key authenticates the very channel you'd use to fix the signing key. Rotation has to overlap old and new keys long enough for the tenant to pick the new one up, or you've suspended your own tenant and the recovery is a car ride.
+
+## Why I did it anyway
+
+Because the alternatives lose worse:
+
+- **It works behind anything.** NAT, hospital firewalls, a basement network with one outbound rule. A push-based control plane needs the customer to open holes toward me; polling needs nothing I don't already have.
+- **"Your control plane cannot connect to our network" ends the security review.** Inbound-zero is a one-line answer that procurement can verify. Nobody has to trust my promises about firewalls.
+- **One protocol for every tenant.** Cloud, on-prem, manual, managed: same heartbeat, same queue, same dashboard. No special tooling for special customers, and that kind of entropy is what kills small teams.
+- **The scope is bounded on purpose.** Commands are rare, idempotent, and low-frequency, so the mailbox stays small and boring. Small and boring is exactly what you want in a control channel.
+- **Degradation is graceful.** If the tower is down, tenants back off and retry. Nothing cascades, nothing times out loudly, and when the tower comes back the fleet walks in over the next minute or two.
 
 # The costs, honestly
 
