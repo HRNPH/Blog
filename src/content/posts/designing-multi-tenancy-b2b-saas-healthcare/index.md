@@ -4,7 +4,7 @@ published: 2026-08-28
 description: "Why I picked a silo (single-tenant stack per customer) for a healthcare B2B product, what it costs, and how to choose a tenancy model for your own SaaS. Same codebase, per-tenant isolation, one control plane that tenants call home to."
 tags: [Architecture, SaaS, Multi-Tenancy, Healthcare, DevOps]
 category: "Engineering"
-draft: true
+draft: false
 ---
 
 # Introduction
@@ -27,13 +27,13 @@ People throw the word around like it's one thing. It's a spectrum, and where you
 
 **Pooled.** One database, one app, every row has a `tenant_id` column. Cheapest to run. Also: every query you ever write carries `WHERE tenant_id = ?` forever, and the one time somebody forgets it, you've leaked one hospital's patients into another hospital's screen. One bad migration takes down every customer simultaneously, in the same minute, on the same outage page. Restoring a single customer's data means surgically extracting it from a live shared database, which nobody enjoys at 2am.
 
-**Bridge.** Shared cluster, database (or schema) per tenant. Middle ground. Isolation at the data layer, shared everything else. Better blast radius, still shared compute and shared meltdowns.
+**Bridge.** Shared cluster, database (or schema) per tenant. Middle ground. Isolation at the data layer, shared everything else. Smaller blast radius, still shared compute and shared meltdowns.
 
 **Silo.** Every tenant gets the whole stack: their own database, their own cache, their own object storage, their own containers. Most expensive per tenant. Also the only model where "this hospital's data" has a physical answer you can point at.
 
 ![The tenancy spectrum: pooled, bridge, and silo shapes](./0-spectrum.svg)
 
-I ended up at silo. Getting there wasn't a preference, it was arithmetic on a few questions.
+I ended up at silo.
 
 # How to pick a model for your SaaS
 
@@ -66,11 +66,11 @@ Four things pushed me to silo:
 - **Blast radius.** One tenant's runaway job, one botched migration, one noisy neighbor: it's that tenant's problem, at that tenant's pace. Everyone else doesn't know it happened.
 - **On-prem had to exist eventually**, and as question 3 above says, that forces the shape anyway.
 
-There was also a quieter reason: operational sanity. Per-tenant backup and restore is a whole-stack snapshot, not surgery. Per-tenant upgrade is a rolling decision per customer. If a hospital wants to stay on an older version for a month while their IT reviews, that's their stack, their choice, no feature flags required.
+There was also a quieter reason, operational sanity. Per-tenant backup and restore is a whole-stack snapshot, not surgery. Per-tenant upgrade is a rolling decision per customer. If a hospital wants to stay on an older version for a month while their IT reviews, that's their stack, their choice, no feature flags required.
 
 # The architecture
 
-The shape in one paragraph: **one codebase, one container image, stamped out once per tenant, plus a central control plane** ("the tower") that provisions and monitors all of them.
+**One codebase, one container image, stamped out once per tenant, plus a central control plane** ("the tower") that provisions and monitors all of them.
 
 ![The silo architecture: one control tower, N identical tenant stacks calling home](./1-architecture.svg)
 
@@ -78,7 +78,7 @@ Each tenant stack is a compose deployment with its own Postgres, Redis, object s
 
 ## The detail that makes on-prem work: tenants call home, the tower never dials in
 
-This is the single most important rule in the whole design, so it gets its own heading.
+This is the single most important rule in the whole design.
 
 **The control plane never initiates connections to tenants.** Every communication is tenant-initiated:
 
@@ -88,7 +88,7 @@ This is the single most important rule in the whole design, so it gets its own h
 
 ![How tenants call home: heartbeat loop, commands riding back on the response, hourly stats](./2-call-home.svg)
 
-Why this matters: a tenant deployed inside a hospital network is behind NAT, behind firewalls, in rooms you will never see. If your control plane needs to reach in, on-prem is dead on arrival. If tenants call out, the same artifact works in your cloud, in the customer's datacenter, and in a hospital basement with one outbound rule. HTTP(S) outbound only. That's the whole network requirement.
+A tenant deployed inside a hospital network is behind NAT, behind firewalls, in rooms you will never see. If your control plane needs to reach in, on-prem is dead on arrival. If tenants call out, the same artifact works in your cloud, in the customer's datacenter, and in a hospital basement with one outbound rule. HTTP(S) outbound only.
 
 :::tip
 If you take one architectural idea from this post, take this one. Pull-based control beats push-based control the moment customers host things themselves. Your monitoring, your config distribution, and your remote commands should all ride connections the tenant opens.
@@ -96,9 +96,9 @@ If you take one architectural idea from this post, take this one. Pull-based con
 
 ## The command mailbox
 
-The obvious question about a control plane that can't reach its tenants: how do you control them? You use the channel that's already open, sixty times an hour.
+Control rides the channel that's already open, sixty times an hour.
 
-A command is a row in a per-tenant queue, nothing more. When a heartbeat arrives, the tower attaches any due commands to the response. The tenant executes them, and the next heartbeat carries the result back as an ack. That's the whole protocol. "Push the latest exercise catalog", "rotate your signing key", "force a heartbeat now": all of it is mail in a mailbox, picked up on a schedule the tenant controls.
+A command is a row in a per-tenant queue, nothing more. When a heartbeat arrives, the tower attaches any due commands to the response. The tenant executes them, and the next heartbeat carries the result back as an ack. "Push the latest exercise catalog", "rotate your signing key", "force a heartbeat now": all of it is mail in a mailbox, picked up on a schedule the tenant controls.
 
 Three details keep it honest:
 
@@ -127,7 +127,7 @@ Every tenant stack boots the same way: a small migration sidecar runs the databa
 
 ## Provisioning is automation or it is death
 
-I learned this the hard way: hand-deploying tenant number three sucks, and tenant number ten is a resignation letter. Our control plane drives the hosting API end to end: create the project, create the database, create the cache, create the isolated network, push the compose definition with the right image tag and env, wire up domains. It's a resumable, step-by-step job with a timeline you can watch in the UI, because when it fails (it will, somewhere, someday) you need to see exactly which step and why.
+I learned this the hard way. Hand-deploying tenant number three sucks, and tenant number ten is a resignation letter. Our control plane drives the hosting API end to end: create the project, create the database, create the cache, create the isolated network, push the compose definition with the right image tag and env, wire up domains. It's a resumable, step-by-step job with a timeline you can watch in the UI, because when it fails (it will, somewhere, someday) you need to see exactly which step and why.
 
 If you can't get to "new tenant in minutes, by clicking", silo's costs stop being worth it. That automation isn't optional polish, it's load-bearing.
 
@@ -135,17 +135,15 @@ If you can't get to "new tenant in minutes, by clicking", silo's costs stop bein
 
 The tower doesn't hardcode a single way to make a tenant exist. Every provisioning job runs against a small provisioner interface (create the stack, report status, tear it down), and the deployment type is just data on the tenant record. Two routes exist today, and they look nothing alike under the hood.
 
-**Managed.** The tower drives a cluster API end to end: create the project, the database, the cache, the isolated network, push the compose definition with the right image tag, wire up the domains. Then the step that matters more than it looks: before anything boots, the tower injects the callback configuration (tower URL, tenant code, signing key material) as runtime environment. The stack's first act on startup is to call home. Nobody SSHes anywhere, nobody edits files on a box, and the tenant-to-tower connection is wired by the same automation that wired the tenant.
+**Managed.** The tower drives a cluster API end to end: create the project, the database, the cache, the isolated network, push the compose definition with the right image tag, wire up the domains. Then, before anything boots, the tower injects the callback configuration (tower URL, tenant code, signing key material) as runtime environment. The stack's first act on startup is to call home. Nobody SSHes anywhere, nobody edits files on a box, and the tenant-to-tower connection is wired by the same automation that wired the tenant.
 
 **Manual.** For on-prem, customer metal, or a hosting setup with no API worth the name. The tower still owns the bookkeeping: it issues the tenant code and credentials and holds the record, but the stack is deployed by hands (ours or the customer's) in a network the tower will never see. The stack boots with a bootstrap config, and the first heartbeat doubles as registration: the tenant tells the tower it's alive, which URLs actually work, what versions it's running. The tower learns the topology from the tenant, in the only direction that was ever going to work.
 
 ![Two deployment routes converging on the same first heartbeat](./3-provisioner-routes.svg)
 
-After that first heartbeat the routes converge completely: same monitoring, same command queue, same stats pipeline. The rest of the tower doesn't know or care which route a tenant arrived by, and that's the actual point of the abstraction. Adding a third route (another cluster API, a marketplace install, whatever next year's procurement demands) means implementing an interface, not redesigning the plane.
+After that first heartbeat the routes converge completely: same monitoring, same command queue, same stats pipeline. The rest of the tower doesn't know or care which route a tenant arrived by. Adding a third route (another cluster API, a marketplace install, whatever next year's procurement demands) means implementing an interface, not redesigning the plane.
 
 ## What's bad about this control plane
-
-The honest list, because this design has real costs beyond the fleet overhead:
 
 - **Everything is at least one heartbeat late.** A command lands within a minute on a good day, and its confirmation arrives a beat later. For "push the catalog" that's irrelevant. For "something is wrong, act now" it's an eternity, and there is no faster path, by construction.
 - **Silence is ambiguous.** If a tenant stops heartbeating, it might be down, partitioned, or just backed off after a network blip. You can't probe it to find out, because you can't probe it at all. First-line diagnosis is comparing timestamps and hoping; real diagnosis means a human at the hospital.
@@ -172,7 +170,7 @@ Everything above was the sales pitch. Here's the bill.
 
 **Every tenant has a floor cost.** A database, a cache, storage, app containers each. Our per-tenant footprint is modest (this isn't Kubernetes-per-customer), but it's nonzero, and it shapes pricing.
 
-**Cross-tenant queries do not exist.** There is no "average across all patients" query, because there is no place where that data lives together. That's a privacy feature until product asks for a benchmark report, and then it's an engineering project: the answer is tenants pushing aggregates (which we already do for stats), never a shared warehouse of raw rows.
+**Cross-tenant queries do not exist.** There is no "average across all patients" query, because there is no place where that data lives together. That's a privacy feature until product asks for a benchmark report, and then it's an engineering project. The answer is tenants pushing aggregates (which we already do for stats), never a shared warehouse of raw rows.
 
 **More moving parts to test.** Signing, replay protection, "the tower never probes tenants", migration idempotency: these are invariants now, and invariants need tests or they slowly rot.
 
@@ -191,4 +189,4 @@ To be clear about the flip side:
 
 Pick the cheapest tenancy model your worst day can survive. Write the leak headline, the outage headline, the "restore one customer" runbook, and read them back to yourself. If your buyers are hospitals, geezers with signing authority who ask where data lives before asking what the product does, the cheapest model that survives those questions is a silo, and the only way to afford it is to automate the stamping.
 
-The design that made it work for us wasn't clever, it was three boring rules: one image for every tenant, tenants call home (never the reverse), and migrations only move forward. Everything else was making those rules convenient to live with.
+The design that made it work was three boring rules: one image for every tenant, tenants call home (never the reverse), and migrations only move forward. Everything else was making those rules convenient to live with.
