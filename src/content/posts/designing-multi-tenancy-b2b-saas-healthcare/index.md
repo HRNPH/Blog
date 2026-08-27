@@ -55,6 +55,8 @@ We knew the answer was eventually yes. Some hospitals want (or procurement requi
 
 This is the real cost gate. If the answer is no and you can't automate your way to yes, silo will eat you. More on that in the costs section.
 
+![The picking flow as a decision tree from worst day to tenancy model](./5-picking-flow.svg)
+
 # Why silo won for us
 
 The product is a rehab exercise platform: doctors prescribe exercise programs, patients do them through a LINE mini app with on-device pose detection, doctors watch progress. B2B, hospitals and clinics, Thailand.
@@ -111,6 +113,8 @@ That history is a side effect of the design, and in healthcare it's half the val
 ## Trust, but signed
 
 Since tenants are the ones talking to the tower, the tower needs to know a tenant is who it claims. Every tenant request is **Ed25519-signed**: headers carry the tenant code, a signature over a canonical request string, a timestamp, and a single-use nonce. The tower rejects stale timestamps and replays. Revoking a tenant's key is how you suspend a tenant. There is no shared static API key sitting in every environment, which was the first thing I wanted gone.
+
+![How a signed request is verified: canonical string, signature check, freshness window, single-use nonce](./6-signed-request.svg)
 
 ## One image, any tenant
 
