@@ -15,7 +15,7 @@ Every healthcare B2B sale I've been in reaches the same moment. The demo goes fi
 
 Whatever you answer in the next thirty seconds decides the deal faster than any feature you showed them.
 
-This post is about the tenancy design I ended up with for our rehab platform: a **silo model**, where every hospital customer gets its own full stack (own database, own cache, own storage, own network), all running the **same codebase**, with a central control plane watching over all of them. I'll walk through why I picked it, what it costs, and how to reason about the choice for your own SaaS, because the right answer for you is probably different.
+This post is about the tenancy design I ended up with for our rehab platform: a silo model, where every hospital customer gets its own full stack (own database, own cache, own storage, own network), all running the same codebase, with a central control plane watching over all of them. I'll walk through why I picked it, what it costs, and how to reason about the choice for your own SaaS, because the right answer for you is probably different.
 
 :::note
 This is an engineering perspective from building one product. I'm not claiming silo is universally correct. It isn't. There's a whole section at the end about when you should not do this.
@@ -23,9 +23,9 @@ This is an engineering perspective from building one product. I'm not claiming s
 
 # What "multi-tenancy" actually means in practice
 
-People throw the word around like it's one thing. It's a spectrum, and where you sit on it decides most of your operational life. The three shapes:
+People throw the word around like it's one thing. It's a spectrum, and where you sit on it decides most of your operational life.
 
-**Pooled.** One database, one app, every row has a `tenant_id` column. Cheapest to run. Also: every query you ever write carries `WHERE tenant_id = ?` forever, and the one time somebody forgets it, you've leaked one hospital's patients into another hospital's screen. One bad migration takes down every customer simultaneously, in the same minute, on the same outage page. Restoring a single customer's data means surgically extracting it from a live shared database, which nobody enjoys at 2am.
+**Pooled.** One database, one app, every row has a `tenant_id` column. Cheapest to run. But every query you ever write carries `WHERE tenant_id = ?` forever, and the one time somebody forgets it, you've leaked one hospital's patients into another hospital's screen. One bad migration takes down every customer simultaneously, in the same minute, on the same outage page. Restoring a single customer's data means surgically extracting it from a live shared database, which nobody enjoys at 2am.
 
 **Bridge.** Shared cluster, database (or schema) per tenant. Middle ground. Isolation at the data layer, shared everything else. Smaller blast radius, still shared compute and shared meltdowns.
 
@@ -63,7 +63,7 @@ Four things pushed me to silo:
 
 - **We're B2B and every customer runs the same codebase.** No hospital needs a custom fork. So the unit of deployment could be "the whole product, once per customer" with zero product divergence.
 - **Healthcare people are correctly paranoid.** Thai hospitals care about PDPA, about data residency, about who can see what. The sentence "your data lives in your own Postgres, on a machine you can point at, and no other hospital's data has ever been in it" does more for a deal than any roadmap slide. Call it easing geezer minds if you want; the geezers sign the contracts.
-- **Blast radius.** One tenant's runaway job, one botched migration, one noisy neighbor: it's that tenant's problem, at that tenant's pace. Everyone else doesn't know it happened.
+- **Blast radius.** One tenant's runaway job, one botched migration, one noisy neighbor. It's that tenant's problem, at that tenant's pace. Everyone else doesn't know it happened.
 - **On-prem had to exist eventually**, and as question 3 above says, that forces the shape anyway.
 
 There was also a quieter reason, operational sanity. Per-tenant backup and restore is a whole-stack snapshot, not surgery. Per-tenant upgrade is a rolling decision per customer. If a hospital wants to stay on an older version for a month while their IT reviews, that's their stack, their choice, no feature flags required.
@@ -77,8 +77,6 @@ There was also a quieter reason, operational sanity. Per-tenant backup and resto
 Each tenant stack is a compose deployment with its own Postgres, Redis, object storage, the API, the doctor dashboard, and the patient mini app, all inside a Docker network named after the tenant. Nothing inside that network needs to talk to another tenant, ever. The tenant gets its own domain pair (API and app), its own TLS, its own everything.
 
 ## The detail that makes on-prem work: tenants call home, the tower never dials in
-
-This is the single most important rule in the whole design.
 
 **The control plane never initiates connections to tenants.** Every communication is tenant-initiated:
 
@@ -98,7 +96,7 @@ If you take one architectural idea from this post, take this one. Pull-based con
 
 Control rides the channel that's already open, sixty times an hour.
 
-A command is a row in a per-tenant queue, nothing more. When a heartbeat arrives, the tower attaches any due commands to the response. The tenant executes them, and the next heartbeat carries the result back as an ack. "Push the latest exercise catalog", "rotate your signing key", "force a heartbeat now": all of it is mail in a mailbox, picked up on a schedule the tenant controls.
+A command is a row in a per-tenant queue, nothing more. When a heartbeat arrives, the tower attaches any due commands to the response. The tenant executes them, and the next heartbeat carries the result back as an ack. "Push the latest exercise catalog", "rotate your signing key", "force a heartbeat now" are all mail in a mailbox, picked up on a schedule the tenant controls.
 
 Three details keep it honest:
 
@@ -129,7 +127,7 @@ Every tenant stack boots the same way: a small migration sidecar runs the databa
 
 I learned this the hard way. Hand-deploying tenant number three sucks, and tenant number ten is a resignation letter. Our control plane drives the hosting API end to end: create the project, create the database, create the cache, create the isolated network, push the compose definition with the right image tag and env, wire up domains. It's a resumable, step-by-step job with a timeline you can watch in the UI, because when it fails (it will, somewhere, someday) you need to see exactly which step and why.
 
-If you can't get to "new tenant in minutes, by clicking", silo's costs stop being worth it. That automation isn't optional polish, it's load-bearing.
+If you can't get to "new tenant in minutes, by clicking", silo's costs stop being worth it. That automation is load-bearing.
 
 ## One provisioner, several deployment routes
 
@@ -145,9 +143,9 @@ After that first heartbeat the routes converge completely: same monitoring, same
 
 ## What's bad about this control plane
 
-- **Everything is at least one heartbeat late.** A command lands within a minute on a good day, and its confirmation arrives a beat later. For "push the catalog" that's irrelevant. For "something is wrong, act now" it's an eternity, and there is no faster path, by construction.
+- **Everything is at least one heartbeat late.** A command lands within a minute if the tenant is healthy, and its confirmation arrives a beat later. For "push the catalog" that's irrelevant. For "something is wrong, act now" it's an eternity, and there is no faster path, by construction.
 - **Silence is ambiguous.** If a tenant stops heartbeating, it might be down, partitioned, or just backed off after a network blip. You can't probe it to find out, because you can't probe it at all. First-line diagnosis is comparing timestamps and hoping; real diagnosis means a human at the hospital.
-- **You are hand-rolling a message queue.** TTLs, retries, idempotency, acks: that's broker vocabulary, and the bug classes that come with it. The protocol only stays small because commands stay rare and boring. The day someone wants chatty remote control, this design fights them.
+- **You are hand-rolling a message queue.** TTLs, retries, idempotency, acks are the vocabulary of a message broker, and so are the bug classes. The protocol only stays small because commands stay rare and boring. The day someone wants chatty remote control, this design fights them.
 - **No interactive debugging.** No SSH, no log tailing, no port-forward into a tenant. You see exactly what the tenant chooses to send. Debugging an on-prem stack means asking the customer to paste command output into an email.
 - **The manual route is a second code path with worse visibility.** A tenant somebody deployed by hand can sit on an old image for months (their right, our blindness), and every difference between how the two routes configure a stack is a difference that can bite during an incident.
 - **Key rotation is a careful dance.** The signing key authenticates the very channel you'd use to fix the signing key. Rotation has to overlap old and new keys long enough for the tenant to pick the new one up, or you've suspended your own tenant and the recovery is a car ride.
@@ -172,7 +170,7 @@ Everything above was the sales pitch. Here's the bill.
 
 **Cross-tenant queries do not exist.** There is no "average across all patients" query, because there is no place where that data lives together. That's a privacy feature until product asks for a benchmark report, and then it's an engineering project. The answer is tenants pushing aggregates (which we already do for stats), never a shared warehouse of raw rows.
 
-**More moving parts to test.** Signing, replay protection, "the tower never probes tenants", migration idempotency: these are invariants now, and invariants need tests or they slowly rot.
+**More moving parts to test.** Signing, replay protection, "the tower never probes tenants", migration idempotency are invariants now, and invariants need tests or they slowly rot.
 
 **The control plane is now a product.** Monitoring UI, provisioning jobs, commands, audit trail. That's real time that pooled-SaaS competitors spend on features. You're buying isolation and on-prem capability with your engineering hours; make sure that's the trade you want.
 
