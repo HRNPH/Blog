@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 1064" width="1280" height="1064" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8fa5c5"/></marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="1064" fill="#0b1220"/>
+
+  <!-- title -->
+  <text x="640" y="46" text-anchor="middle" font-size="26" font-weight="700" fill="#f1f5f9">Homelab — network &amp; infrastructure</text>
+  <text x="640" y="70" text-anchor="middle" font-size="13" fill="#9fb0c8">192.168.0.0/16 · four subnets · two ways in</text>
+
+  <!-- ============ top row: the two ways in + domain story ============ -->
+  <rect x="60" y="100" width="300" height="116" rx="12" fill="#141f33" stroke="#3d4d68"/>
+  <text x="84" y="130" font-size="16" font-weight="700" fill="#e6ebf3">Mac — outside the home</text>
+  <text x="84" y="156" font-size="12.5" fill="#9fb0c8">reaches in over Tailscale</text>
+  <text x="84" y="176" font-size="12.5" fill="#9fb0c8">lands on the TrueNAS exit node</text>
+
+  <rect x="400" y="100" width="340" height="116" rx="12" fill="#141f33" stroke="#3d4d68"/>
+  <text x="424" y="130" font-size="16" font-weight="700" fill="#e6ebf3">Public side — Cloudflare</text>
+  <text x="424" y="156" font-size="12.5" fill="#9fb0c8">public DNS for the root domain</text>
+  <text x="424" y="176" font-size="12.5" fill="#9fb0c8">traffic rides the tunnel back home</text>
+  <text x="424" y="196" font-size="12.5" fill="#6b7c96">no inbound ports on the router</text>
+
+  <rect x="780" y="100" width="400" height="116" rx="12" fill="#141f33" stroke="#3d4d68"/>
+  <text x="804" y="130" font-size="16" font-weight="700" fill="#e6ebf3">One root domain — SSL everywhere</text>
+  <text x="804" y="156" font-size="12.5" fill="#9fb0c8">outside: Cloudflare tunnel → Zoraxy</text>
+  <text x="804" y="176" font-size="12.5" fill="#9fb0c8">at home: Technitium → Zoraxy</text>
+  <text x="804" y="196" font-size="12.5" fill="#6b7c96">Zoraxy terminates SSL — HTTPS on LAN too</text>
+
+  <!-- ============ home /16 container ============ -->
+  <rect x="50" y="248" width="1180" height="802" rx="16" fill="#0d1626" stroke="#2c3a52" stroke-width="1.5"/>
+  <text x="74" y="280" font-size="16" font-weight="700" fill="#dbe7f8">Home network — 192.168.0.0/16</text>
+
+  <!-- ============ zone A: 192.168.1.0/24 core ============ -->
+  <rect x="70" y="296" width="1140" height="344" rx="10" fill="#101a2c" stroke="#2c3a52" stroke-width="1.5"/>
+  <text x="100" y="326" font-size="13"><tspan font-weight="700" fill="#dbe7f8">192.168.1.0/24</tspan><tspan fill="#9fb0c8"> — core infra &amp; services (static)</tspan></text>
+
+  <!-- A1: entry chain -->
+  <rect x="100" y="344" width="280" height="84" rx="8" fill="#1a2740" stroke="#3d4d68"/>
+  <text x="116" y="368" font-size="13.5" font-weight="700" fill="#e6ebf3">Cloudflare Tunnel server</text>
+  <text x="116" y="388" font-size="11.5" fill="#9fb0c8">cloudflared · outbound-only</text>
+  <text x="116" y="406" font-size="11.5" fill="#9fb0c8">public hostnames land here</text>
+
+  <line x1="382" y1="386" x2="494" y2="386" stroke="#8fa5c5" stroke-width="2" marker-end="url(#arr)"/>
+
+  <rect x="500" y="344" width="300" height="84" rx="8" fill="#1a2740" stroke="#3d4d68"/>
+  <text x="516" y="368" font-size="13.5" font-weight="700" fill="#e6ebf3">Zoraxy — single entrypoint</text>
+  <text x="516" y="388" font-size="11.5" fill="#9fb0c8">reverse proxy · routes by hostname</text>
+  <text x="516" y="406" font-size="11.5" fill="#9fb0c8">TLS termination for the root domain</text>
+
+  <line x1="828" y1="386" x2="806" y2="386" stroke="#8fa5c5" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arr)"/>
+
+  <rect x="830" y="344" width="350" height="84" rx="8" fill="#1a2740" stroke="#3d4d68"/>
+  <text x="846" y="368" font-size="13.5" font-weight="700" fill="#e6ebf3">Technitium DNS</text>
+  <text x="846" y="388" font-size="11.5" fill="#9fb0c8">resolves the custom root domain</text>
+  <text x="846" y="406" font-size="11.5" fill="#9fb0c8">serves all four subnets</text>
+
+  <!-- A2: compute -->
+  <rect x="100" y="458" width="340" height="160" rx="8" fill="#1a2740" stroke="#3d4d68"/>
+  <text x="120" y="482" font-size="13.5" font-weight="700" fill="#e6ebf3">TrueNAS — storage</text>
+  <text x="120" y="506" font-size="12" font-weight="700" fill="#cfe0f5">Tailscale exit node</text>
+  <text x="120" y="548" font-size="12" fill="#9fb0c8">the Mac lands here from outside</text>
+  <text x="120" y="568" font-size="12" fill="#9fb0c8">storage for the cluster</text>
+
+  <rect x="480" y="458" width="700" height="160" rx="8" fill="#1a2740" stroke="#3d4d68"/>
+  <text x="500" y="482" font-size="13.5" font-weight="700" fill="#e6ebf3">Proxmox VE 8.4 — 3-node cluster</text>
+
+  <rect x="505" y="496" width="200" height="88" rx="8" fill="#141f33" stroke="#3d4d68"/>
+  <text x="521" y="520" font-size="13" font-weight="700" fill="#e6ebf3">sayaka</text>
+  <text x="521" y="542" font-size="11.5" fill="#9fb0c8">stable — real workloads</text>
+
+  <rect x="725" y="496" width="200" height="88" rx="8" fill="#141f33" stroke="#3d4d68"/>
+  <text x="741" y="520" font-size="13" font-weight="700" fill="#e6ebf3">madoka</text>
+  <text x="741" y="542" font-size="11.5" fill="#9fb0c8">may drop — non-critical</text>
+
+  <rect x="945" y="496" width="200" height="88" rx="8" fill="#141f33" stroke="#3d4d68"/>
+  <text x="961" y="520" font-size="13" font-weight="700" fill="#e6ebf3">hrnph</text>
+  <text x="961" y="542" font-size="11.5" fill="#9fb0c8">may drop — non-critical</text>
+
+  <!-- ============ zone B: 192.168.2.0/24 devices ============ -->
+  <rect x="70" y="660" width="1140" height="104" rx="10" fill="#101a2c" stroke="#2c3a52" stroke-width="1.5"/>
+  <text x="100" y="690" font-size="13"><tspan font-weight="700" fill="#dbe7f8">192.168.2.0/24</tspan><tspan fill="#9fb0c8"> — home devices (DHCP)</tspan></text>
+
+  <rect x="100" y="706" width="1080" height="44" rx="8" fill="#1a2740" stroke="#3d4d68"/>
+  <text x="116" y="724" font-size="12" fill="#c6d3e8">phones, laptops, TVs — anything that joins the network</text>
+  <text x="116" y="740" font-size="11.5" fill="#9fb0c8">DHCP pool, so devices never share a subnet with the servers</text>
+
+  <!-- ============ zone C: 192.168.3.0/24 monitoring ============ -->
+  <rect x="70" y="784" width="1140" height="132" rx="10" fill="#101a2c" stroke="#2c3a52" stroke-width="1.5"/>
+  <text x="100" y="814" font-size="13"><tspan font-weight="700" fill="#dbe7f8">192.168.3.0/24</tspan><tspan fill="#9fb0c8"> — monitoring</tspan></text>
+
+  <rect x="100" y="830" width="1080" height="72" rx="8" fill="#1a2740" stroke="#3d4d68"/>
+  <text x="116" y="852" font-size="13" font-weight="700" fill="#e6ebf3">Raspberry Pi — Grafana + InfluxDB</text>
+  <text x="116" y="872" font-size="11.5" fill="#9fb0c8">ARP-scans the /16, maps every used IP into the monitoring table</text>
+  <rect x="116" y="880" width="100" height="18" rx="9" fill="#22304c"/>
+  <text x="166" y="892" text-anchor="middle" font-size="10" fill="#c6d3e8">sees .1.0/24</text>
+  <rect x="226" y="880" width="100" height="18" rx="9" fill="#22304c"/>
+  <text x="276" y="892" text-anchor="middle" font-size="10" fill="#c6d3e8">sees .2.0/24</text>
+  <rect x="336" y="880" width="120" height="18" rx="9" fill="#22304c"/>
+  <text x="396" y="892" text-anchor="middle" font-size="10" fill="#c6d3e8">sees .4–255.0/24</text>
+
+  <!-- ============ zone D: experiments ============ -->
+  <rect x="70" y="936" width="1140" height="100" rx="10" fill="#101a2c" stroke="#2c3a52" stroke-width="1.5"/>
+  <text x="100" y="966" font-size="13"><tspan font-weight="700" fill="#dbe7f8">192.168.4.0/24 – .255.0/24</tspan><tspan fill="#9fb0c8"> — experiments</tspan></text>
+
+  <rect x="100" y="982" width="1080" height="40" rx="8" fill="#1a2740" stroke="#3d4d68"/>
+  <text x="116" y="1000" font-size="12" fill="#c6d3e8">services spun up and torn down periodically</text>
+  <text x="116" y="1016" font-size="11.5" fill="#9fb0c8">the rest of the /16 — 252 spare /24s</text>
+
+  <!-- ============ arrows (drawn last, on top of everything) ============ -->
+  <polyline points="570,216 570,306 240,306 240,340" fill="none" stroke="#8fa5c5" stroke-width="2" marker-end="url(#arr)"/>
+  <text x="405" y="300" text-anchor="middle" font-size="11" fill="#9fb0c8">Cloudflare Tunnel</text>
+
+  <polyline points="84,216 84,446 150,446 150,468" fill="none" stroke="#8fa5c5" stroke-width="2" marker-end="url(#arr)"/>
+  <text x="96" y="236" font-size="11" fill="#9fb0c8">Tailscale</text>
+
+  <polyline points="560,428 560,446 270,446 270,468" fill="none" stroke="#8fa5c5" stroke-width="2" marker-end="url(#arr)"/>
+  <polyline points="740,428 740,446 880,446 880,468" fill="none" stroke="#8fa5c5" stroke-width="2" marker-end="url(#arr)"/>
+  <text x="650" y="438" text-anchor="middle" font-size="10.5" fill="#9fb0c8">routes by hostname</text>
+
+  <line x1="970" y1="706" x2="970" y2="640" stroke="#8fa5c5" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arr)"/>
+  <text x="984" y="678" font-size="10.5" fill="#9fb0c8">DNS</text>
+</svg>

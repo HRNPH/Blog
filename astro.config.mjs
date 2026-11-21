@@ -55,6 +55,21 @@ export default defineConfig({
     Compress({
       CSS: false,
       Image: false,
+      SVG: {
+        svgo: {
+          plugins: [
+            {
+              name: 'preset-default',
+              params: {
+                overrides: {
+                  // keep viewBox so SVG diagrams scale inside <img> tags
+                  removeViewBox: false,
+                },
+              },
+            },
+          ],
+        },
+      },
       Action: {
         Passed: async () => true, // https://github.com/PlayForm/Compress/issues/376
       },
